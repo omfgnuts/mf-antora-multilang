@@ -1,0 +1,2 @@
+* xref:index.adoc[Universal Declaration of Human Rights]
+* xref:readme.adoc[Readme]

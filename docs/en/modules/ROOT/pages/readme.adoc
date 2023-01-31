@@ -1,0 +1,160 @@
+= Antora i18n Readme
+:author: Boyd Kelly
+:page-author: Boyd Kelly
+:page-revdate: 2022-10-16
+:page-role: blog
+:page-image:
+:description:
+:keywords: readme, antora, i18n
+:category: Language
+:page-tags:
+:url-gitlab: "git@gitlab.com:antora-ui-custom/antora-i18n.git"
+:lang: en
+include::locale/attributes.adoc[]
+
+== Antora i18n description
+
+This Antora UI is based on the https://gitlab.com/antora/antora-ui-default[Antora Default UI], with the purpose of facilitating a multilingual site.
+
+While it follows as closely as possible the default ui, it adds the following features/changes:
+
+. Translates the `lang` meta attribute of the html element using the component version (lang) value, or the `:page-lang:` attribute in the source document.
+. Makes use of header-content.$lang.hbs partials for a translated header for each language.
+. Incorporates the https://gitlab.com/antora/antora-lunr-extensionlunr[Antora Lunr Extension] to provide offline search in lunr supported languages.
+. Adds the node getttext.js package to translate:
+.. Tooltips in the ui.
+.. Search placeholder message (Search here...)
+.. "Contents" title of right side bar
+.. "Edit this page" link text
+.. "Display the translated 'component' name in language menu 
+. Incorporates the https://gitlab.com/antora/antora-collector-extension[Antora Collector Extension] to enable po4a to generate translated documents and inject these to the content aggregate.
+. Incorporates https://gitlab.com/antora/antora-assembler[Antora Assembler] to produce a pdf for each component/language.
++
+* Todo:
+* [ ] Add a button to the toolbar to download pdf. 
+
+== Build this locally.
+
+. Clone this repo
++
+[source, bash]
+----
+git clone https://gitlab.com/antora-ui-custom/antora-i18n.git`
+----
+
+. Build the ui
++
+[source, bash]
+----
+pushd ui
+npm i
+gulp bundle
+popd
+----
+ 
+. Build the site
++
+[source, bash]
+----
+npm i
+npm run build-local
+----
+
+== Customize
+
+=== UI repo
+
+. Copy the ui outside of this directory and do a git init.
+. Push to git hosting service. (gitlab ci included)
+. Within ui/src/partials customize the header.hbs and header-content.$lang files, renaming and editing according to your languages.
+. Customize and/or add translations for tooltips and messages in js/vendor/i18n-head.js.
+
+=== Docs repo
+
+. Copy/create a repo containing docs and l10n directories with antora.yml under docs/lang edited to reflect the site languages and component names.
+. Copy the update_po.sh script to the base of the document repo, and adjust `lang` variable statement appropriately.  
+
+=== Playbook build repo
+
+. Edit playbook.yml to specify the languages used by lunr search.
++
+[source, yaml]
+----
+antora:
+  extensions:
+  - '@antora/collector-extension'
+  - require: '@antora/lunr-extension'
+    languages: [en, fr]
+  - require: '@antora/pdf-extension'
+----
+
+. Edit playbook.yml to point the correct ui bundle and document repo.
+== Language requirements
+
+. Each language should be organized as a https://docs.antora.org/antora/latest/standard-directories/#hierarchy-and-reserved-names[repository root]. 
+
+=== Content descriptor file
+
+. The content descriptor file (antora.yml), should specify the version as the iso language code corresponding to that used in the header-content.$lang.hbs and i18n.js files. 
+. For each _target_ translation the language code must be specified in the `run` and `scan: dir:` values of the collector extension. See <po4a> below.
+
+.Sample descriptor files
+[width="100%",cols="2",frame="topbot",opts="header",stripes="none"]
+|====
+|Source language descriptor|Target language descriptor
+a|
+[source,yaml]
+----
+name: antora-i18n
+title: Multilingual Antora
+version: en
+display_version: English
+nav:
+  - modules/ROOT/nav.adoc
+----
+a|
+[source,yaml]
+----
+name: antora-i18n
+title: Antora multilingue
+version: fr
+display_version: Français
+nav:
+  - modules/ROOT/nav.adoc
+ext:
+  collector:
+    run:
+      command: "po4a --variable langs=fr po4a.cfg"
+    scan:
+      dir: build/fr
+----
+|====
+
+
+=== Page attributes
+
+. The page attributes may include a :lang: attribute that is used to include the locale specific asciidoctor files.
+. (Optionally) Copy the https://github.com/asciidoctor/asciidoctor/tree/main/data/locale [locale files you need] to the pages/locale directory of the corresponding language in your document repo.
+. Pages will by default be generated with an html "lang" attribute (`<html lang="fr">`) corresponding to the language of the component version.
+  However this may be overridden by setting an optional `:page-lang:` attribute in the document.  (ie you may have an English document in the French section (component version) of your site.
+
+== po4a
+
+Po4a is very flexible and may be configured in a number of ways.  This is one example.
+
+. Modify the update_po.sh script and _change the langs variable_ to reflect _all_ the target languages of the site.
++
+WARNING: Never run an unknown script without verifying what it does!  This script assumes that these files are in a git repo and does a commit on the l10n directory each time it is run.
+. All source language files must be located under the repository root for the source language. Each translatable file _must_ also be entered in the po4a.cfg file.
++
+NOTE: In in the content descriptor file the `lang` variable is set to the _single_ language of that component version.
+. Whenever _any_ change is made to a source document or a new source document is added, the update_po.sh script _must_ be run.
+. After running the update_po.sh script, filename.po files for all target languages will be generated under the l10/po directory.
+. Edit the generated po files with your favorite po editor.  (Neovim/emacs, poedit gtranslator and many more.)
+. When generating your site with `npx antora playbook.yml` your translated documents will be generated and injected into the content catalogue.
+. See the https://po4a.org/man/man3/Locale::Po4a::AsciiDoc.3pm.php[asciidoc options man page] for information on asciidoc specific options available for the po4a.cfg file.  Some very useful options (included po4a.cfg):
+  entry:: Specify the attributes you want to translate.  Probably lang, page-tags, keywords, description, etc.
+  tablecells:: Tell po4a if you want to translate tables at the cell level 
+  keep:: What percentage of the doc needs to be translated in order to publish it.
+. All the options can be specified as global defaults and then may be overridden for each file.
+. One very useful general po4a option is `pot=prefix` for files that would normally be overwritten. This would be the case for nav.adoc or index.adoc files in different modules.  With the `pot=` option, po4a will add a prefix to the generated po files. It may be practical to use the module name ie `pot=ROOT-nav` to easily identify each nav.adoc or index.adoc.

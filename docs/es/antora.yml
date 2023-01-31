@@ -1,0 +1,22 @@
+name: antora-i18n
+title: Antora i18n
+version: es
+display_version: Spanish
+prerelease: x
+nav:
+  - modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    page-home: I dan se
+    page-about: À propos
+    page-products: FeereFɛɛnw
+    page-product: Fɛɛn
+    page-services: Baaradaw
+    page-service: Baarada
+    page-download: K'a lana
+ext:
+  collector:
+    run:
+      command: "po4a --variable langs=dyu po4a.cfg"
+    scan:
+      dir: build/dyu

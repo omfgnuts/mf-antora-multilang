@@ -1,0 +1,16 @@
+name: antora-i18n
+title: Multilingual Antora
+version: en
+display_version: English
+prerelease: z
+nav:
+  - modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    page-home: Home
+    page-about: About
+    page-products: Products
+    page-product: Product
+    page-services: Services
+    page-service: Service
+    page-download: Download
